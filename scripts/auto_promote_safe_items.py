@@ -11,6 +11,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+import config as _cfg
 from memory_validation_gate import prompt_noise_reasons
 from memory_db import (
     fetch_memory_items,
@@ -64,8 +65,10 @@ PROMOTABLE_TYPES = {
 # of the verbosity and reasoning penalties, so in practice nothing the agents
 # produced could ever be promoted. Lowered to 0.85 deliberately, to let that
 # work through, accepting more agent prose in exchange.
-PROMOTION_MIN_CONFIDENCE = 0.85
-PROMOTION_MIN_IMPORTANCE = 0.85
+# Sourced from config so every tunable lives in one place; still overridable
+# per-run via OPENCLAW_PROMOTION_MIN_CONFIDENCE / _IMPORTANCE.
+PROMOTION_MIN_CONFIDENCE = _cfg.PROMOTION_MIN_CONFIDENCE
+PROMOTION_MIN_IMPORTANCE = _cfg.PROMOTION_MIN_IMPORTANCE
 
 
 def has_identity(item: dict) -> bool:

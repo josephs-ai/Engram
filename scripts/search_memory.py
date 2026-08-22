@@ -18,6 +18,7 @@ from sentence_transformers import SentenceTransformer, CrossEncoder
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+import config as cfg
 
 from memory_db import hybrid_search_memory_items, close_pool
 from vector_store_qdrant import search_memory_vectors
@@ -82,7 +83,7 @@ def rerank_rows(query: str, rows: list[dict], top_n: int = 12) -> list[dict]:
     for row, raw in zip(head, raw_scores, strict=True):
         row["rerank_raw"] = float(raw)
         row["rerank_score"] = sigmoid(float(raw))
-        row["score"] = (row["score"] * 0.35) + (row["rerank_score"] * 1.25)
+        row["score"] = (row["score"] * cfg.WEIGHT_RERANK_BASE) + (row["rerank_score"] * cfg.WEIGHT_RERANK_SCORE)
 
     head.sort(key=lambda x: (-x["score"], -x.get("mtime", 0), x["source_type"], x["path"]))
     return head + tail
@@ -292,7 +293,7 @@ def main():
         seen.add(text)
         scored.append(
             {
-                "score": float(hit.score or 0.0) + 0.20,
+                "score": float(hit.score or 0.0) + cfg.GRAPH_HIT_BONUS,
                 "source_type": "canonical_qdrant",
                 "path": "qdrant:memory_items",
                 "text": text,
@@ -311,7 +312,7 @@ def main():
                 iid = row.get("item_id")
                 if iid and iid in boosts:
                     row["feedback_boost"] = boosts[iid]
-                    row["score"] += boosts[iid] * 0.15  # Conservative weight
+                    row["score"] += boosts[iid] * cfg.WEIGHT_FEEDBACK_BOOST
         except Exception:
             LOGGER.debug("Feedback boost failed, continuing without", exc_info=True)
 

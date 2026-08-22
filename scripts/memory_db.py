@@ -14,6 +14,7 @@ WORKSPACE = Path.home() / ".openclaw" / "workspace"
 # shared default — previously this read only OPENCLAW_MEMORY_DB_DSN, diverging
 # from the ~30 scripts that read OPENCLAW_MEMORY_DSN and causing silent
 # identity drift between modules in the same deployment / in CI.
+import config as cfg
 from config import resolve_db_dsn
 
 DEFAULT_DSN = resolve_db_dsn()
@@ -1110,8 +1111,8 @@ def hybrid_search_memory_items(
     source_agent_prefix: str | None = None,
     after_ts=None,
     before_ts=None,
-    half_life_days: float = 30.0,
-    recency_weight: float = 0.6,
+    half_life_days: float | None = None,
+    recency_weight: float | None = None,
 ):
     """after_ts / before_ts hard-filter by event time; recency_* tune the decay.
 
@@ -1122,6 +1123,10 @@ def hybrid_search_memory_items(
     placeholder by one.
     """
     allowed_sensitivities = list(allowed_sensitivities or ["public"])
+    if half_life_days is None:
+        half_life_days = cfg.RECENCY_HALF_LIFE_DAYS
+    if recency_weight is None:
+        recency_weight = cfg.RECENCY_WEIGHT
     half_life_days = max(float(half_life_days), 0.0001)
 
     sql = """
@@ -1173,7 +1178,7 @@ def hybrid_search_memory_items(
                 1 - (e.embedding <=> %s::vector) AS vector_score,
 
                 (
-                    0.18 * (
+                    {w_text} * (
                         SELECT COUNT(*)
                         FROM unnest(q.qterms) qt
                         WHERE qt <> ''
@@ -1185,7 +1190,7 @@ def hybrid_search_memory_items(
                           )
                     )
                     +
-                    0.20 * (
+                    {w_entity} * (
                         SELECT COUNT(*)
                         FROM unnest(q.qterms) qt
                         WHERE qt <> ''
@@ -1197,7 +1202,7 @@ def hybrid_search_memory_items(
                           )
                     )
                     +
-                    0.45 * (
+                    {w_property} * (
                         SELECT COUNT(*)
                         FROM unnest(q.qterms) qt
                         WHERE qt <> ''
@@ -1209,7 +1214,7 @@ def hybrid_search_memory_items(
                           )
                     )
                     +
-                    0.55 * (
+                    {w_value} * (
                         SELECT COUNT(*)
                         FROM unnest(q.qterms) qt
                         WHERE qt <> ''
@@ -1222,7 +1227,7 @@ def hybrid_search_memory_items(
                     )
                 ) AS structured_bonus,
 
-                COALESCE(0.8, 0.75) * 0.25 AS importance_bonus,
+                COALESCE(0.8, 0.75) * {w_importance} AS importance_bonus,
 
                 COALESCE(m.last_confirmed, m.first_seen, m.created_at) AS event_at,
                 CASE
@@ -1251,8 +1256,8 @@ def hybrid_search_memory_items(
             SELECT
                 *,
                 (
-                    (fts_rank * 3.0)
-                    + (vector_score * 1.1)
+                    (fts_rank * {w_fts})
+                    + (vector_score * {w_vector})
                     + structured_bonus
                     + importance_bonus
                     + (recency_score * {recency_w})
@@ -1270,8 +1275,17 @@ def hybrid_search_memory_items(
         LIMIT %s
     """
 
-    sql = sql.format(half_life=repr(float(half_life_days)),
-                     recency_w=repr(float(recency_weight)))
+    sql = sql.format(
+        half_life=repr(float(half_life_days)),
+        recency_w=repr(float(recency_weight)),
+        w_text=repr(cfg.WEIGHT_TERM_IN_TEXT),
+        w_entity=repr(cfg.WEIGHT_TERM_IN_ENTITY),
+        w_property=repr(cfg.WEIGHT_TERM_IN_PROPERTY),
+        w_value=repr(cfg.WEIGHT_TERM_IN_VALUE),
+        w_importance=repr(cfg.WEIGHT_IMPORTANCE),
+        w_fts=repr(cfg.WEIGHT_FTS),
+        w_vector=repr(cfg.WEIGHT_VECTOR),
+    )
 
     vec = "[" + ",".join(str(float(x)) for x in query_embedding) + "]"
 
