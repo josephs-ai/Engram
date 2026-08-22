@@ -34,7 +34,24 @@ MEMORY_DIR = WORKSPACE / "memory"
 
 SEARCH_SERVICE_URL = os.environ.get("OPENCLAW_SEARCH_SERVICE_URL", "http://127.0.0.1:8791")
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-RERANK_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+# Sourced from config so the model name is stated once for every path.
+RERANK_MODEL_NAME = cfg.RERANK_MODEL
+
+# Loading a CrossEncoder costs ~0.15s warm and ~0.35s cold, against ~0.39s for
+# the prediction it exists to make. rerank_rows() constructed one on every call,
+# so a CLI doing repeated searches paid that each time -- and with the HF cache
+# cold or offline mode unset it can reach for the network too. search_runtime
+# and context_hydrator already cache theirs this way; this path did not.
+# Importing search_runtime's singleton instead would drag in Neo4j, Qdrant and
+# memory_db for one model, so it is cached locally.
+_RERANK_MODEL: CrossEncoder | None = None
+
+
+def get_rerank_model() -> CrossEncoder:
+    global _RERANK_MODEL
+    if _RERANK_MODEL is None:
+        _RERANK_MODEL = CrossEncoder(RERANK_MODEL_NAME)
+    return _RERANK_MODEL
 
 def sigmoid(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-float(x)))
@@ -63,7 +80,7 @@ def rerank_rows(query: str, rows: list[dict], top_n: int = 12) -> list[dict]:
     head = rows[:top_n]
     tail = rows[top_n:]
 
-    model = CrossEncoder(RERANK_MODEL_NAME)
+    model = get_rerank_model()
     pairs = [[query, row["text"]] for row in head]
     raw_scores = model.predict(pairs)
 
