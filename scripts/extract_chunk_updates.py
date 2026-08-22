@@ -97,6 +97,31 @@ def load_cache(cache_path: Path) -> dict:
 
 
 
+# Temp files left by a run that died between mkstemp and os.replace. The
+# finally-block below cleans up on any normal exit, but not on SIGKILL -- and
+# these runs do get killed (deadline timeouts, shutdown). Each orphan is the
+# full cache, 400-640 MB apiece; 21 of them reached 6.3 GB.
+ORPHAN_TMP_AGE_SECONDS = 3600
+
+
+def sweep_orphan_cache_tmps(cache_path: Path, max_age: int = ORPHAN_TMP_AGE_SECONDS) -> int:
+    """Remove stale <cache>.*.tmp siblings from previously killed runs."""
+    removed = 0
+    parent = cache_path.parent
+    if not parent.is_dir():
+        return 0
+    cutoff = time.time() - max_age
+    for tmp in parent.glob(cache_path.name + ".*.tmp"):
+        try:
+            # Age-gated so a concurrent writer's temp is never touched.
+            if tmp.stat().st_mtime < cutoff:
+                tmp.unlink()
+                removed += 1
+        except OSError:
+            pass
+    return removed
+
+
 def save_cache(cache_path: Path, cache: dict):
     payload = {
         "cache_format_version": CACHE_FORMAT_VERSION,
@@ -104,6 +129,9 @@ def save_cache(cache_path: Path, cache: dict):
         "entries": cache,
     }
     cache_path.parent.mkdir(parents=True, exist_ok=True)
+    orphans = sweep_orphan_cache_tmps(cache_path)
+    if orphans:
+        print(json.dumps({"swept_orphan_cache_tmps": orphans}), file=sys.stderr)
     fd, tmp_path = tempfile.mkstemp(prefix=cache_path.name + ".", suffix=".tmp", dir=str(cache_path.parent))
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:

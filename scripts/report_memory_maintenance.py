@@ -35,6 +35,10 @@ def age_days(item):
     return (datetime.now(timezone.utc) - ts).days
 
 
+# Cap on listed groups; the totals above it remain exact.
+MAX_DUPLICATE_GROUPS = 50
+
+
 def same_slot(a, b):
     return (
         a.get("memory_type") == b.get("memory_type")
@@ -140,17 +144,40 @@ def main():
     print()
 
     print("=== POSSIBLE DUPLICATE ACTIVE ITEMS ===")
-    found = False
-    for i in range(len(active)):
-        for j in range(i + 1, len(active)):
-            a = active[i]
-            b = active[j]
-            if same_slot(a, b) and a.get("value") == b.get("value"):
-                found = True
-                print(f"- {a.get('id')} <-> {b.get('id')}")
-                print(f"  slot=({a.get('entity')}, {a.get('property')}, {a.get('value')})")
-    if not found:
+    # Group by slot instead of comparing every pair. The old O(n^2) loop also
+    # had no identity guard, and same_slot compares memory_type/entity/scope/
+    # property -- all NULL on ~10k items -- so every one of those "matched"
+    # every other. That is ~51M pairs, two printed lines each: this report
+    # reached 1 GB and 31M lines, and the directory of them reached 19 GB.
+    groups: dict[tuple, list] = {}
+    skipped_no_identity = 0
+    for item in active:
+        if not (item.get("entity") and item.get("property") and item.get("value") is not None):
+            skipped_no_identity += 1
+            continue
+        key = (
+            item.get("memory_type"),
+            item.get("entity"),
+            item.get("scope"),
+            item.get("property"),
+            item.get("value"),
+        )
+        groups.setdefault(key, []).append(item.get("id"))
+
+    dupes = {k: v for k, v in groups.items() if len(v) > 1}
+    if not dupes:
         print("NONE")
+    else:
+        total = sum(len(v) for v in dupes.values())
+        print(f"{len(dupes)} duplicated slot(s) covering {total} items")
+        # A report nobody can open helps nobody; the counts above stay exact.
+        for key, ids in sorted(dupes.items(), key=lambda kv: -len(kv[1]))[:MAX_DUPLICATE_GROUPS]:
+            shown = ", ".join(ids[:8]) + (f" (+{len(ids) - 8} more)" if len(ids) > 8 else "")
+            print(f"- slot=({key[1]}, {key[3]}, {key[4]}) x{len(ids)}: {shown}")
+        if len(dupes) > MAX_DUPLICATE_GROUPS:
+            print(f"... {len(dupes) - MAX_DUPLICATE_GROUPS} more slot(s) not listed")
+    if skipped_no_identity:
+        print(f"({skipped_no_identity} items skipped: no entity/property/value to compare)")
     print()
 
     print("=== NON-ACTIVE ITEMS STILL FREQUENTLY CONSIDERED ===")

@@ -4,6 +4,7 @@ Create memory restore point.
 Key functions: now_stamp, copy_if_exists, main
 """
 import argparse
+import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,29 @@ MEMORY_DIR = WORKSPACE / "memory"
 REVIEW_DIR = MEMORY_DIR / "review"
 LOGS_DIR = WORKSPACE / ".memory-index" / "logs"
 RESTORE_DIR = LOGS_DIR / "restore-points"
+
+# How many restore points to keep. One is written before every maintenance
+# cycle and nothing ever removed them: 250 accumulated in 15 days and reached
+# 15 GB, on a disk that went to 85% full. Recent ones are what anyone would
+# actually roll back to.
+KEEP_RESTORE_POINTS = int(os.environ.get("OPENCLAW_KEEP_RESTORE_POINTS", "20"))
+
+
+def prune_restore_points(keep: int = KEEP_RESTORE_POINTS) -> int:
+    """Delete all but the newest *keep* restore points. Returns how many went."""
+    try:
+        points = sorted(
+            (d for d in RESTORE_DIR.iterdir() if d.is_dir()),
+            key=lambda d: d.name,          # names are ISO timestamps, so sort==age
+            reverse=True,
+        )
+    except FileNotFoundError:
+        return 0
+    removed = 0
+    for stale in points[keep:]:
+        shutil.rmtree(stale, ignore_errors=True)
+        removed += 1
+    return removed
 
 RESTORE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -61,6 +85,10 @@ def main():
         rel = src.relative_to(WORKSPACE)
         dst = out_dir / rel
         copy_if_exists(src, dst)
+
+    pruned = prune_restore_points()
+    if pruned:
+        print(f"pruned_old_restore_points={pruned}")
 
     print("RESTORE_POINT_CREATED")
     print(f"path={out_dir}")

@@ -2,6 +2,8 @@
 Run periodic memory maintenance — compaction, reconciliation, embedding
 backfills, and health checks.
 """
+import os
+import shutil
 import argparse
 import json
 import subprocess
@@ -14,6 +16,25 @@ LOGS_DIR = WORKSPACE / ".memory-index" / "logs"
 REVIEW_DIR = WORKSPACE / "memory" / "review"
 DECISIONS_LOG = REVIEW_DIR / "decisions.log"
 STATE_FILE = LOGS_DIR / "maintenance-cycle-state.json"
+
+# One report directory per cycle, and nothing pruned them: 255 accumulated,
+# several over 900 MB apiece because the duplicate section printed every pair
+# of identity-less items.
+KEEP_CYCLE_DIRS = int(os.environ.get("OPENCLAW_KEEP_CYCLE_DIRS", "20"))
+
+
+def prune_cycle_dirs(keep: int = KEEP_CYCLE_DIRS) -> int:
+    """Delete all but the newest *keep* maintenance-cycle report directories."""
+    dirs = sorted(
+        (d for d in LOGS_DIR.glob("maintenance-cycle-*") if d.is_dir()),
+        key=lambda d: d.name,     # ISO-stamped names sort by age
+        reverse=True,
+    )
+    removed = 0
+    for stale in dirs[keep:]:
+        shutil.rmtree(stale, ignore_errors=True)
+        removed += 1
+    return removed
 
 APPLY_FEEDBACK = SCRIPTS_DIR / "apply_feedback_actions.py"
 REPORT_MAINT = SCRIPTS_DIR / "report_memory_maintenance.py"
@@ -127,6 +148,10 @@ def main():
         return
 
     ts = now_iso().replace(":", "-")
+    pruned = prune_cycle_dirs()
+    if pruned:
+        print(f"pruned_old_cycle_dirs={pruned}")
+
     cycle_dir = LOGS_DIR / f"maintenance-cycle-{ts}"
     cycle_dir.mkdir(parents=True, exist_ok=True)
 
