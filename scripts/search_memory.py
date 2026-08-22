@@ -18,6 +18,7 @@ from sentence_transformers import SentenceTransformer, CrossEncoder
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
 import config as cfg
 
 from memory_db import hybrid_search_memory_items, close_pool
@@ -29,7 +30,7 @@ from temporal_scoring import compute_temporal_boost
 
 LOGGER = logging.getLogger("openclaw.search_memory")
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKSPACE = _cfg.WORKSPACE
 MEMORY_DIR = WORKSPACE / "memory"
 
 SEARCH_SERVICE_URL = os.environ.get("OPENCLAW_SEARCH_SERVICE_URL", "http://127.0.0.1:8791")

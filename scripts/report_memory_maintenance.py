@@ -11,12 +11,11 @@ from datetime import datetime, timezone
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
 
 from memory_db import close_pool, fetch_memory_items, get_conn
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
-
-
+WORKSPACE = _cfg.WORKSPACE
 def parse_iso(ts):
     if not ts:
         return None

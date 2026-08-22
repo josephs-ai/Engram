@@ -17,13 +17,14 @@ from project_memory_paths import (
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
 
 from memory_refresh_config import (
     get_agent_memory_paths,
     get_agent_refresh_interval,
 )
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKSPACE = _cfg.WORKSPACE
 LOGS_DIR = WORKSPACE / ".memory-index" / "logs"
 STATE_FILE = LOGS_DIR / "agent-memory-refresh-state.json"
 

@@ -11,10 +11,11 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
 
 from memory_db import insert_retrieval_feedback_row, close_pool
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKSPACE = _cfg.WORKSPACE
 REVIEW_DIR = WORKSPACE / "memory" / "review"
 DECISIONS_LOG = REVIEW_DIR / "decisions.log"
 

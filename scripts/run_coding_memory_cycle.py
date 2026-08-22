@@ -13,13 +13,14 @@ from project_lock import acquire_project_lock, release_project_lock
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
 
 from project_memory_paths import (
     get_project_snapshot_file,
     get_project_summary_file,
 )
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKSPACE = _cfg.WORKSPACE
 SCRIPTS_DIR = WORKSPACE / ".memory-index" / "scripts"
 LOGS_DIR = WORKSPACE / ".memory-index" / "logs"
 

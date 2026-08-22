@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -69,24 +70,39 @@ def check_legacy_dirs() -> Result:
 
 
 def check_naming_consistency() -> Result:
-    """The project is called several different things across its own files."""
-    names = {
-        "Engram": 0, "OpenClaw Memory": 0, "openclaw-memory": 0, "Memory-System-claw": 0,
-    }
-    looked = [ROOT / "README.md", ROOT / "pyproject.toml"]
-    for f in looked:
+    """Names that point somewhere that no longer exists.
+
+    Counting spelling variants flags false problems: a project legitimately has
+    a display name, a descriptive subtitle, and a hyphenated distribution name
+    that differ. What actually matters is whether any recorded URL points at a
+    repository that is not this one -- those render as broken badges and dead
+    links.
+    """
+    try:
+        remote = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            cwd=ROOT, capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
+    except Exception:
+        return Result("naming", WARN, "could not read git remote to compare against")
+    m = re.search(r"[:/]([\w.-]+/[\w.-]+?)(?:\.git)?$", remote)
+    if not m:
+        return Result("naming", WARN, f"unparseable remote: {remote}")
+    canonical = m.group(1)
+
+    stale = []
+    for f in (ROOT / "README.md", ROOT / "pyproject.toml", ROOT / "README-macOS.md"):
         if not f.exists():
             continue
-        text = f.read_text(errors="ignore")
-        for k in names:
-            names[k] += text.count(k)
-    used = {k: v for k, v in names.items() if v}
-    if len(used) <= 1:
-        return Result("naming", OK, f"single name in use: {used or 'none found'}")
-    return Result(
-        "naming", WARN,
-        f"{len(used)} names in README/pyproject: " + ", ".join(f"{k}x{v}" for k, v in used.items()),
-    )
+        for hit in re.findall(r"github\.com/([\w.-]+/[\w.-]+)", f.read_text(errors="ignore")):
+            hit = hit.removesuffix(".git")
+            if hit.lower() != canonical.lower():
+                stale.append(f"{f.name}: {hit}")
+    if stale:
+        return Result("naming", FAIL,
+                      f"{len(stale)} URL(s) point at a repo other than {canonical}",
+                      evidence=sorted(set(stale))[:6])
+    return Result("naming", OK, f"all repo URLs point at {canonical}")
 
 
 def check_hardcoded_paths() -> Result:

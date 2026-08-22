@@ -41,6 +41,12 @@ MEMORY_ROOT = Path(
     os.environ.get("OPENCLAW_MEMORY_ROOT", str(_DEFAULT_ROOT))
 ).resolve()
 
+# The workspace that contains the memory index. Derived from MEMORY_ROOT so
+# that setting OPENCLAW_MEMORY_ROOT actually relocates everything -- 63 scripts
+# each re-deriving Path.home()/".openclaw"/"workspace" ignored that override and
+# pinned the tree to one machine's layout.
+WORKSPACE = MEMORY_ROOT.parent
+
 SCRIPTS_DIR = MEMORY_ROOT / "scripts"
 HEALTH_DIR = MEMORY_ROOT / "health"
 CONFIG_JSON = MEMORY_ROOT / "config.json"

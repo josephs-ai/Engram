@@ -20,7 +20,7 @@ from memory_db import (
     get_conn,
 )
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKSPACE = _cfg.WORKSPACE
 REVIEW_DIR = WORKSPACE / "memory" / "review"
 DECISIONS_LOG = REVIEW_DIR / "decisions.log"
 

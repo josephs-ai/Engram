@@ -57,9 +57,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/josephs-ai/Memory-System-claw"
-Repository = "https://github.com/josephs-ai/Memory-System-claw"
-Issues = "https://github.com/josephs-ai/Memory-System-claw/issues"
+Homepage = "https://github.com/josephs-ai/Engram"
+Repository = "https://github.com/josephs-ai/Engram"
+Issues = "https://github.com/josephs-ai/Engram/issues"
 
 [project.scripts]
 openclaw-memory = "scripts.search_memory_service:main"
