@@ -63,6 +63,8 @@ Issues = "https://github.com/josephs-ai/Engram/issues"
 
 [project.scripts]
 openclaw-memory = "scripts.search_memory_service:main"
+engram = "engram.cli:main"
+engram-audit = "scripts.hygiene_audit:main"
 
 [tool.pytest.ini_options]
 testpaths = ["scripts"]
@@ -70,5 +72,8 @@ python_files = ["test_*.py"]
 addopts = "-q --tb=short"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["scripts*"]
+# src/ holds the public package; scripts/ is still shipped because systemd
+# units, cron entries and checkpoint_agent invoke those files by path, and
+# moving them is a separate change from making the library importable.
+where = ["src", "."]
+include = ["engram*", "scripts*"]

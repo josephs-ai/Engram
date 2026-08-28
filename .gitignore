@@ -87,3 +87,6 @@ control_panel/templates/*_backup*
 # Python
 __pycache__/
 *.pyc
+
+# Editable-install artifacts
+*.egg-info/
