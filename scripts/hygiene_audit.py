@@ -239,17 +239,49 @@ def check_orphan_temps() -> Result:
 # --------------------------------------------------------------------------
 
 def check_test_coverage_shape() -> Result:
-    """Operational scripts with no test at all."""
-    tests = {p.name for p in _py_files() if p.name.startswith("test_")}
-    tested = {t[len("test_"):] for t in tests}
-    ops = [p.name for p in _py_files()
-           if not p.name.startswith("test_") and p.name not in {"conftest.py"}]
-    untested = [o for o in ops if o not in tested]
-    pct = 100 * len(untested) / max(len(ops), 1)
-    status = FAIL if pct > 80 else WARN if pct > 50 else OK
-    return Result("test-shape", status,
-                  f"{len(untested)}/{len(ops)} scripts ({pct:.0f}%) have no test_<name>.py",
-                  evidence=sorted(untested)[:8])
+    """Modules with public logic and no test.
+
+    Counting every script is the wrong measure: a module whose only function is
+    main() is a thin CLI wrapper, and a unit test for it would mostly exercise
+    argparse. What matters is modules exporting public functions that other code
+    depends on, with nothing pinning their behaviour.
+
+    Weighted by importers, because a bug in something 59 modules import is a
+    different problem from one in a leaf script.
+    """
+    import ast as _ast
+    import collections
+
+    names = {p.stem for p in _py_files()}
+    importers: collections.Counter = collections.Counter()
+    for p in _py_files():
+        for m in re.finditer(r"^\s*(?:from|import)\s+([a-zA-Z_]\w*)", p.read_text(errors="ignore"), re.M):
+            if m.group(1) in names and m.group(1) != p.stem:
+                importers[m.group(1)] += 1
+
+    tested = {p.stem[len("test_"):] for p in SCRIPTS.glob("test_*.py")}
+    untested = []
+    for p in _py_files():
+        if p.stem.startswith("test_") or p.stem in {"conftest"} or p.stem in tested:
+            continue
+        try:
+            tree = _ast.parse(p.read_text(errors="ignore"))
+        except SyntaxError:
+            continue
+        public = [n for n in _ast.walk(tree)
+                  if isinstance(n, (_ast.FunctionDef, _ast.AsyncFunctionDef))
+                  and not n.name.startswith("_") and n.name != "main"]
+        if public:
+            untested.append((importers[p.stem], p.stem))
+
+    untested.sort(reverse=True)
+    # A module nothing imports is a leaf; one that many import is load-bearing.
+    core = [(c, n) for c, n in untested if c >= 3]
+    status = FAIL if core else WARN if untested else OK
+    detail = (f"{len(untested)} modules with public logic have no test"
+              f" ({len(core)} of them imported by 3+ others)")
+    return Result("test-shape", status, detail,
+                  evidence=[f"{n} ({c} importers)" for c, n in core[:8]])
 
 
 def check_packaging() -> Result:
