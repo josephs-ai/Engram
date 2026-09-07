@@ -33,6 +33,7 @@ from urllib import error, request
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
 
 from extract_updates_qwen import (  # noqa: E402  (path set above)
     PROMPT_TEMPLATE,
@@ -47,9 +48,7 @@ DEFAULT_MODEL = os.environ.get("OPENCLAW_CLAUDE_MODEL", "claude-haiku-4-5")
 DEFAULT_TIMEOUT = float(os.environ.get("OPENCLAW_CLAUDE_TIMEOUT", "120"))
 DEFAULT_MAX_TOKENS = int(os.environ.get("OPENCLAW_CLAUDE_MAX_TOKENS", "4096"))
 
-OPENCLAW_CONFIG = Path.home() / ".openclaw" / "openclaw.json"
-
-
+OPENCLAW_CONFIG = _cfg.OPENCLAW_CONFIG_JSON
 def resolve_api_key() -> str:
     """Env first, then the anthropic provider in openclaw's config."""
     key = os.environ.get("ANTHROPIC_API_KEY", "").strip()

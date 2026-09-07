@@ -10,7 +10,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 MEMORY_INDEX_DIR = WORKSPACE / ".memory-index"
 CONTROL_PANEL_CONFIG = MEMORY_INDEX_DIR / "control_panel" / "control_panel_config.json"
 STARTER = MEMORY_INDEX_DIR / "scripts" / "start_heartbeat_worker.py"

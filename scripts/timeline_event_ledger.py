@@ -10,9 +10,15 @@ import json
 from pathlib import Path
 from typing import Any
 
-OPENCLAW_ROOT = Path.home() / ".openclaw"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+OPENCLAW_ROOT = _cfg.OPENCLAW_ROOT
 AGENTS_DIR = OPENCLAW_ROOT / "agents"
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKSPACE = _cfg.WORKSPACE
 DEFAULT_LEDGER = WORKSPACE / ".memory-index" / "timeline" / "events.jsonl"
 
 

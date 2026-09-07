@@ -8,7 +8,13 @@ from datetime import datetime, timedelta
 import shutil
 import re
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 MEMORY_DIR = WORKSPACE / "memory"
 DAILY_DIR = MEMORY_DIR / "daily"
 ARCHIVE_DAILY_DIR = MEMORY_DIR / "archive" / "daily"

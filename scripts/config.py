@@ -47,6 +47,13 @@ MEMORY_ROOT = Path(
 # pinned the tree to one machine's layout.
 WORKSPACE = MEMORY_ROOT.parent
 
+# The OpenClaw state root and the per-agent session store. Derived from
+# WORKSPACE for the same reason: scripts that rebuilt these from Path.home()
+# ignored OPENCLAW_MEMORY_ROOT and pinned themselves to one machine's layout.
+OPENCLAW_ROOT = WORKSPACE.parent
+AGENTS_DIR = OPENCLAW_ROOT / "agents"
+OPENCLAW_CONFIG_JSON = OPENCLAW_ROOT / "openclaw.json"
+
 SCRIPTS_DIR = MEMORY_ROOT / "scripts"
 HEALTH_DIR = MEMORY_ROOT / "health"
 CONFIG_JSON = MEMORY_ROOT / "config.json"

@@ -8,7 +8,13 @@ from pathlib import Path
 from psycopg.types.json import Jsonb
 from psycopg_pool import ConnectionPool
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 # Resolve DSN via the single canonical resolver so this core data layer honors
 # BOTH env var names (OPENCLAW_MEMORY_DSN and OPENCLAW_MEMORY_DB_DSN) with one
 # shared default — previously this read only OPENCLAW_MEMORY_DB_DSN, diverging
@@ -16,6 +22,8 @@ WORKSPACE = Path.home() / ".openclaw" / "workspace"
 # identity drift between modules in the same deployment / in CI.
 import config as cfg
 from config import resolve_db_dsn
+
+import sys
 
 DEFAULT_DSN = resolve_db_dsn()
 

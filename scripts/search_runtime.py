@@ -16,9 +16,15 @@ from graph_store_neo4j import get_neo4j_driver
 from memory_db import hybrid_search_memory_items
 from vector_store_qdrant import search_memory_vectors
 
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
 LOGGER = logging.getLogger("openclaw.search_runtime")
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+WORKSPACE = _cfg.WORKSPACE
 MEMORY_DIR = WORKSPACE / "memory"
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"

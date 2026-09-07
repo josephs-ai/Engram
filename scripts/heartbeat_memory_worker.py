@@ -19,7 +19,12 @@ from typing import Any
 from heartbeat_tuning import compute_effective_interval
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+WORKSPACE = _cfg.WORKSPACE
 CONTROL_PANEL_DIR = WORKSPACE / ".memory-index" / "control_panel"
 CONFIG_PATH = CONTROL_PANEL_DIR / "control_panel_config.json"
 SCRIPTS_DIR = WORKSPACE / ".memory-index" / "scripts"
@@ -40,6 +45,7 @@ from checkpoint_db import (
 )
 
 from heartbeat_manager_common import LOG_FILE, build_runtime_env
+
 
 POLL_SECONDS = 5
 DEFAULT_DEBOUNCE_SECONDS = 12

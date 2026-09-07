@@ -12,7 +12,13 @@ from datetime import datetime, timezone
 
 from memory_db import fetch_memory_items, feedback_stats_db, close_pool
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 SCRIPTS_DIR = WORKSPACE / ".memory-index" / "scripts"
 MATCH_SCRIPT = SCRIPTS_DIR / "match_memory_items.py"
 

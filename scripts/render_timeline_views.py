@@ -10,7 +10,13 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 TIMELINE_ROOT = WORKSPACE / ".memory-index" / "timeline"
 DEFAULT_LEDGER = TIMELINE_ROOT / "events.jsonl"
 DAILY_DIR = TIMELINE_ROOT / "daily"

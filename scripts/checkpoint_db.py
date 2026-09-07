@@ -16,7 +16,13 @@ from psycopg_pool import ConnectionPool
 
 from pathlib import Path
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 MEMORY_INDEX_DIR = WORKSPACE / ".memory-index"
 ENV_FILE = MEMORY_INDEX_DIR / ".env"
 
@@ -48,6 +54,8 @@ for _k, _v in load_env_file(ENV_FILE).items():
 # different roles depending on which module opened the pool. Centralizing
 # removes that divergence.
 from config import resolve_db_dsn
+
+import sys
 
 DEFAULT_DSN = resolve_db_dsn()
 CHECKPOINT_LOCK_KEY = 913004271

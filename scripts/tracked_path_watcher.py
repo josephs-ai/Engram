@@ -18,7 +18,13 @@ from watchdog.observers import Observer
 from checkpoint_db import close_pool, enqueue_trigger, ensure_checkpoint_tables, set_state
 from heartbeat_manager_common import build_runtime_env
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 CONTROL_PANEL_DIR = WORKSPACE / ".memory-index" / "control_panel"
 CONFIG_PATH = CONTROL_PANEL_DIR / "control_panel_config.json"
 

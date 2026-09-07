@@ -33,7 +33,7 @@ if str(SCRIPT_DIR) not in sys.path:
 import config as _cfg
 
 WORKSPACE = _cfg.WORKSPACE
-AGENTS_DIR = Path.home() / ".openclaw" / "agents"
+AGENTS_DIR = _cfg.AGENTS_DIR
 INDEX = WORKSPACE / ".memory-index"
 SCRATCH = INDEX / "dehydrated" / "chunks_backfill"
 LOGS = INDEX / "logs"

@@ -8,7 +8,13 @@ from pathlib import Path
 
 from memory_db import upsert_memory_items, count_memory_items, close_pool
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 REVIEW_DIR = WORKSPACE / "memory" / "review"
 
 

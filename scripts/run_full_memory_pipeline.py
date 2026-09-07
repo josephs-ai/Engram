@@ -7,7 +7,13 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
 
-WORKSPACE = Path.home() / ".openclaw" / "workspace"
+import sys
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import config as _cfg
+
+WORKSPACE = _cfg.WORKSPACE
 SCRIPTS_DIR = WORKSPACE / ".memory-index" / "scripts"
 LOGS_DIR = WORKSPACE / ".memory-index" / "logs"
 
